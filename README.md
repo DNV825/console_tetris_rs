@@ -1,12 +1,5 @@
 # console_tetris_rs
 
-<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-  <symbol id="folder"><path d="M10,20 l5,-20 50,0 5,20 80,0 5,5 0,80 -5,5 -140,0 -5,-5 0,-80 5,-5 60,0" style="stroke:#000000; fill:#ffffff; stroke-width:1px;" /></symbol>
-  <symbol id="node"><rect x="10" y="40" width="100" height="100" style="stroke:#000000; fill:#ffffff; stroke-width: 1px;" /><path d="M10,40 l20,-20 100,0 -20,20" style="stroke:#000000; fill:none; stroke-width: 1px;" /><path d="M131,20 l0,100 -21,20" style="stroke:#000000; fill:none; stroke-width: 1px;" /></symbol>
-  <symbol id="file"><path d="M10,10 l80,0 0,90 -10,10 -70,0 0,-100" style="stroke:#000000; fill:none; stroke-width: 1px;" />
-<path d="M90,100 l-10,0 0,10" style="stroke: #000000; fill:#cccccc; stroke-width: 1px;" /></symbol>
-</svg>
-
 ## Rustの基本
 
 | No | 用語 | 意味 |
@@ -18,10 +11,15 @@
 | (5) | 外部クレート | 主に [crates.io](https://crates.io/) で公開されているクレートのこと。 |
 | (6) | stdクレート | Rustの標準ライブラリを提供するクレートのこと。 |
 
-<svg xmlns="http://www.w3.org/2000/svg" style="width: 600px; height:600px;">
+![./img/rust_basic.svg](./img/rust_basic.svg)
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="width: 600px; height:600px;">
+  <symbol id="folder"><path d="M10,20 l5,-20 50,0 5,20 80,0 5,5 0,80 -5,5 -140,0 -5,-5 0,-80 5,-5 60,0" style="stroke:#000000; fill:#ffffff; stroke-width:1px;" /></symbol>
+  <symbol id="node"><rect x="10" y="40" width="100" height="100" style="stroke:#000000; fill:#ffffff; stroke-width: 1px;" /><path d="M10,40 l20,-20 100,0 -20,20" style="stroke:#000000; fill:none; stroke-width: 1px;" /><path d="M131,20 l0,100 -21,20" style="stroke:#000000; fill:none; stroke-width: 1px;" /></symbol>
+  <symbol id="file"><path d="M10,10 l80,0 0,90 -10,10 -70,0 0,-100" style="stroke:#000000; fill:none; stroke-width: 1px;" /><path d="M90,100 l-10,0 0,10" style="stroke: #000000; fill:#cccccc; stroke-width: 1px;" /></symbol>
   <use id="package" xlink:href="#folder" x="0" y="5" transform="scale(3.8,5)" />
   <text x="150" y="85" style="font-size: 30px; text-anchor:middle;">(1) Package</text>
-  <use id="cargo.toml" xlink:href="#file" x="70" y="160" transform="scale(1.3,0.8)" />
+  <use id="cargo.toml" xlink:href="#file" x="60" y="160" transform="scale(1.4,0.8)" />
   <text x="155" y="167" style="font-size: 20px; text-anchor:middle;">(2)</text>
   <text x="155" y="187" style="font-size: 20px; text-anchor:middle;">Cargo.toml</text>
   <use id="crate" xlink:href="#node" x="3" y="60" transform="scale(3,2.8)" />
