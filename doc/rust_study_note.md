@@ -605,7 +605,283 @@ fn main() {
 
 ### 列挙型
 
+Rustの列挙型は代数的データ型と呼ばれる方の一種で、C言語のような整数しか扱えない言語に比べるとはるかに強力な機能を持つ。
 
+TODO:代数的データ型とは？
+
+#### enum
+
+```rust
+enum 列挙体名 {
+    ヴァリアント名[(型)],
+    ヴァリアント名[(型)],
+    ヴァリアント名[(型)],
+    ...
+}
+```
+
+ヴァリアントとは列挙型を構成するメンバーのこと。列挙体オブジェクトは「`let 変数名 = 列挙体名::ヴァリアント名;`」の形式で生成する。ヴァリアントへ値を持たせる場合、ヴァリアントの宣言時に型を指定する。そして、「`let 変数名 = 列挙体名::ヴァリアント名(値)`」と記述すれば、値とともにオブジェクトを生成する。
+
+```rust
+enum Type {
+    Value,
+    One(i32),
+    Two(f64),
+}
+
+fn main() {
+    let value = Type::Value;
+    let one = Type::One(1);
+    println!("Hello, world!");
+}
+```
+
+#### impl
+
+```rust
+impl 列挙体名 {
+    fn メソッド名(&self[, 引数名, ...])[ -> 型] {
+        // 処理
+    }
+
+    fn 関連関数名([引数名, ...])[ -> 型] {
+        // 処理
+    }
+}
+```
+
+列挙体にも`impl`文でメソッド・関連関数を追加できる。
+
+```rust
+enum Type {
+    Value,
+    One(i32),
+    Two(f64),
+}
+
+impl Type {
+    fn associated_function() {
+
+    }
+
+    fn method(&self) {
+        
+    }
+}
+
+fn main() {
+    let value = Type::Value;
+    let one = Type::One(1);
+    println!("Hello, world!");
+}
+```
+
+#### match
+
+```rust
+match 列挙体オブジェクト {
+    ヴァリアント名[(変数)] => 処理,
+    ヴァリアント名[(変数)] => 処理,
+    [_] => 処理,
+}
+```
+
+列挙体は`match`演算子を利用したパターンマッチを行える。ヴァリアント名の後ろに指定する変数にはヴァリアントの値が束縛される。`_ => 処理`は`else`文的な役割を担う。列挙体がとりうるヴァリアントをすべて網羅している場合、`_`は不要。
+
+```rust
+enum Type {
+    Value,
+    One(i32),
+    Two(f64),
+}
+
+fn print(t: Type) {
+    match t {
+        Type::Value => println!("Value: "),
+        Type::One(i) => println!("One({})", i),
+        _ => println!("_"),
+    }
+}
+
+fn main() {
+    let value = Type::Value;
+    let one = Type::One(1);
+    let two = Type::Two(2.0);
+
+    print(value);
+    print(one);
+    print(two);
+}
+```
+
+#### 標準ライブラリの型
+
+- `Option<T>`：`Some(T)`、`None`
+
+```rust
+fn double(number:u32) -> Option<u32> {
+    if number > (u32::MAX / 2) {
+        return None;
+    }
+    Some(number * 2)
+}
+
+fn main() {
+    let doubled = double(100).unwrap();
+    println!("doubled = {}", doubled);
+}
+```
+
+- `Result<T, E>`：`Ok(T)`、`Err(E)`
+
+```rust
+#[derive(Debug)]
+enum Error {
+    Overflow,
+    Zero,
+}
+
+fn double(number: u32) -> Result<u32, Error> {
+    if number == 0 {
+        Err(Error::Zero)
+    } else if number > (u32::MAX / 2) {
+        Err(Error::Overflow)
+    } else {
+        Ok(number * 2)
+    }
+}
+
+fn main() {
+    match double(100) {
+        Ok(x) => println!("doubled = {}", x),
+        Err(_e) => println!("double failed"),
+    }
+
+    if let Ok(x) = double(u32::MAX) {
+        println!("double = {} (u32::MAX)", x); // Err(Error::Overflow)が返るので、このルートには入らない。
+    }
+}
+```
+
+### 所有権システム
+
+所有権システムはRustの安全性を支える機能で、ダングリングポインタ（解放済みのメモリ領域を指すポインタ）を作らないことを保証する。所有権システムは以下の3つの概念から成り立つ。
+
+- 所有権（Ownership）
+- 借用（Borrow）
+- ライフタイム（Lifetime）
+
+#### 所有権（Ownership）
+
+所有権（Owership）のポイントは以下の通り。
+
+- すべての値は常に唯一の所有権を持つ所有者が存在する
+- 所有者がスコープを抜けると所有していた値は破棄され、値にアクセスできなくなる
+- 値をコピーするかムーブするかで振る舞いが異なる
+  - コピー：別のメモリ領域に値をコピーし、元の領域の値も残す操作
+  - ムーブ：別のメモリ領域に値をコピーし、元の領域の値は未初期化状態に戻す操作
+  - 値をコピーするかムーブするかは型が`Copy`トレイトを実装しているかで決まる
+
+```rust
+struct Sensor {
+    active: bool,
+    latest: u32,
+}
+
+impl Sensor {
+    fn new() -> Sensor {
+        Sensor {
+            active: false,
+            latest: 0,
+        }
+    }
+}
+
+fn main() {
+    // プリミティブ型は値がコピーされ、
+    // xとyそれぞれが別のメモリ領域の所有権を持つ。
+    let x = 10;
+    let y = x;
+
+    println!("x = {}, y = {}", x, y);
+
+    // ユーザー定義型（構造体）は値がムーブされ、
+    // s1が所有権を持っていた領域は未初期化状態に戻され、
+    // s2が所有権を持つ領域にのみ値が保持される。
+    let s1 = Sensor::new();
+    let s2 = s1;
+    
+    println!("s1.latest = {}", s1.latest); // s1はムーブされているため、この行はコンパイルエラーになる。
+    println!("s2.latest = {}", s2.latest);
+}
+```
+
+#### 借用（Borrow)
+
+借用（Borrow）はコピーもムーブも行わず、元の値を参照する仕組みのこと。`&`や`&mut`キーワードを用いて実現する。これらのキーワードは「値を参照している = 値の所有権を持っていない」ことを表す。
+
+以下の例では、main()で`use_sensor(&mut s)`を呼び出している。`&mut s`は関数を抜けるとスコープから外れて破棄されるが、借用元の`s`はそのまま残る。
+
+```rust
+struct Sensor {
+    active: bool,
+    latest: u32,
+}
+
+impl Sensor {
+    fn new() -> Sensor {
+        Sensor {
+            active: false,
+            latest: 0,
+        }
+    }
+}
+
+fn use_sensor(s: &mut Sensor) {
+    s.latest = 42;
+}
+
+fn main() {
+    let mut s = Sensor::new();
+    use_sensor(&mut s);   
+    println!("s.latest = {}", s.latest);
+}
+```
+
+#### ライフタイム（lifetime）
+
+ライフタイムは借用と深い関わりのある機能で、値の所有者（参照元）が参照先よりも長く生存することを保証する仕組み。参照の有効期間をチェックする機能を借用チェッカー（Borrow Checker）と呼び、コンパイル時にこのチェックが走る。
+
+通常の変数であればコンパイル時にライフタイムを推論してチェックを行ってくれる。ただし、関数の引数が参照の場合、または構造体のメンバーが参照の場合は参照先の生存期間を推論すことができない（関数本体や構造体本体の評価を行う時点では実際に参照へ割り当てたデータが存在せず、仮引数の情報しかないので生存期間を推論できない）。そのため、ライフタイムを明示する必要がある。
+
+ライフタイムを明示するためにはライフタイムパラメーターと呼ばれる記述を追記する。慣例的に、`'a`のようにアポストロフィーで始まる小文字が利用される。指定したライフタイムパラメーターは、同じライフタイムパラメーターが指定されているもの同士が同じ期間有効であることを示す。
+
+関数が参照を引数にとる場合、関数名にライフタイムパラメーターを`<'a>`のように指定し、必要な仮引数・戻り値へライフタイムパラメーター`'a`を指定する。構造体が参照をメンバーに持つ場合、構造体にライフタイムパラメーターを`<'a>`のように指定し、すべての参照メンバーにライフタイムパラメーター`'a`を記述する。
+
+```rust
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+
+struct Image<'a> {
+    raw: &'a [u8; 255],
+}
+
+fn main() {
+    let image;
+    {
+        let bytes = [0; 255];
+        image = Image {
+            raw: &bytes, // rawの参照先がimageの生存期間より前に消滅するのでコンパイルエラーになる。
+        }
+    }
+    println!("The first byte of image is {}", image.raw[0]);
+}
+```
 
 ## 組み込み機器向けにRustを利用するための情報
 
@@ -657,3 +933,20 @@ unsafe {
 
 1. -, The rustup book, -, -, <https://rust-lang.github.io/rustup/index.html>
 1. -, The Cargo Book, -, -, <https://doc.rust-lang.org/cargo/index.html>
+1. -, Rustの日本語ドキュメント/Japanese Docs for Rust, -, -, <https://doc.rust-jp.rs/>
+1. -, The Rust Programming Language 日本語版, -, -, <https://doc.rust-jp.rs/book-ja/title-page.html>
+1. -, The Rust Programming Languate, -, -, <https://doc.rust-lang.org/book/title-page.html>
+1. -, Rust by Example 日本語版, -, -, <https://doc.rust-jp.rs/rust-by-example-ja/index.html>
+1. -, The Unstable Book, -, -, <https://doc.rust-lang.org/beta/unstable-book/the-unstable-book.html>
+1. -, What is rustc?, -, -, <https://doc.rust-lang.org/nightly/rustc/what-is-rustc.html>
+1. -, The Rust Reference, -, -, <https://doc.rust-lang.org/reference/introduction.html>
+1. -, Rust 裏本, -, -, <https://doc.rust-jp.rs/rust-nomicon-ja/index.html>
+
+### 組み込みRustの資料
+
+1. tomoyuki-nakabayashi, The Embedded Rust Book, -, -, <https://tomoyuki-nakabayashi.github.io/book/intro/index.html>
+1. getditto, `safer_ffi` User Guide, -, -, <https://getditto.github.io/safer_ffi/introduction/_.html>
+1. michael-f-bryan, Rust FFI Guide, -, -, <https://michael-f-bryan.github.io/rust-ffi-guide/overview.html>
+1. Will Crichton, Memory Safety in Rust: A Case Study with C, &amp;notepad, 2018/02/02, <https://willcrichton.net/notes/rust-memory-safety/>
+1. -, Rust Design Patterns, -, -, <https://rust-unofficial.github.io/patterns/intro.html>
+1. dbrgn, Calling Rust from C and Java, -, 2017/10/31, <https://speakerdeck.com/dbrgn/calling-rust-from-c-and-java?slide=20>
