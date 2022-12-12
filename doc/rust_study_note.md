@@ -82,6 +82,15 @@ cargoとは、Rustのビルドツール、およびパッケージマネージ�
 
 これらに加えてサブコマンド（`cargo install cargo-generate`のようなもの）まである。とりあえず、「何か色々できるのだなあ」と認識しておけばよいだろう。
 
+cargo、およびCargo.tomlの説明資料は以下の通り。
+
+- The Cargo Book
+  <https://doc.rust-lang.org/cargo/>
+- The Manifest Format
+  <https://doc.rust-lang.org/cargo/reference/manifest.html>
+
+また、cargoの設定ファイルを`プロジェクト/.cargo/config.toml`に配置することができる。
+
 ## プロジェクト（パッケージ）の構成
 
 Rustのプロジェクト（パッケージ）は以下の構成をとる。
@@ -336,6 +345,10 @@ fn main() {
 }
 ```
 
+#### （TODO）型変換
+
+TODO:後で書く
+
 ### 制御フロー
 
 #### if...else if...else
@@ -468,7 +481,7 @@ fn double(number: u32) -> u32 {
 }
 ```
 
-### コメント
+### （TODO）コメント
 
 ```rust
 // 行コメント
@@ -603,7 +616,7 @@ fn main() {
 }
 ```
 
-### 列挙型
+### （TODO）列挙型
 
 Rustの列挙型は代数的データ型と呼ばれる方の一種で、C言語のような整数しか扱えない言語に比べるとはるかに強力な機能を持つ。
 
@@ -883,44 +896,324 @@ fn main() {
 }
 ```
 
-## 組み込み機器向けにRustを利用するための情報
+### ジェネリクス（generics）
 
-### 標準ライブラリの構造
-
-Rustの標準ライブラリは以下の3レベル構造で提供されている。
-
-![./img/3level_structure_std_library.png](./img/3level_structure_std_library.png)
-
-`core`クレートと`alloc`クレートは`std`クレートのサブセットである。
-
-最も下層の`core`クレートは前提条件なしで利用できる。ただし、整数型やスライスのようなプリミティブ型や、アトミック操作のようなプロセッサ機能を利用する処理しか提供されていない（OSやCPUといったプラットフォームに依存しない処理しか提供されていない）。
-
-`alloc`クレートは`Box`型や`Vec`型といったヒープメモリを利用する型を提供する。`alloc`クレートを利用するには、メモリアロケーターの実装が必要となる。
-
-`std`クレートはファイルシステムやネットワーク、スレッドといったOS機能を提供する。`println!`マクロやコマンドライン引数を渡すインターフェースも`std`クレートの役割である。`std`クレートを利用するためにはOSが必要となる。
-
-通常は考慮不要だが、OSが載っていない組み込み機器向けにアプリケーションを作成する際には、これらを考慮しなければならない。
-
-### unsafeブロック
-
-FPGAボードなどを利用する際はハードウェアを直接制御することになるが、その場合「Rustコンパイラが安全でないとみなすコード」を記述する必要がある。そのために利用するのがunsafeブロックで、以下のように記述する。もちろん、記述内容の安全性は記述者であるプログラマーが保証しなければならない。
+ジェネリクスはJavaやC#のような言語で使える機能と同様で、具体的な方を記述しない、抽象的なプログラミングを可能にする方法である。記述方法は以下の通り。若干しっくりこないが、体で覚えよう（宣言時の記述はわりと腹落ちするが、呼び出し時の`関数名::<型パラメーター>`の記述はなにか変だ。あと、`impl<T>`も納得いかないというか、指定しなくてよいのではと感じる）。
 
 ```rust
-unsafe {
-  // 安全でない操作を記述できる。
-  // 操作の安全性はプログラマーが保障する。
+struct Point<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Point<T> {
+    fn new(x: T, y: T) -> Point<T> {
+        Point { x, y }
+    }
+
+    fn getx(&self) -> &T {
+        &self.x
+    }
+
+    fn setx(&mut self, x: T) {
+        self.x = x;
+    }
+}
+
+fn set_xy<T>(p: &mut Point<T>, x: T, y: T) {
+    p.x = x;
+    p.y = y;
+}
+
+fn main() {
+    let p_i32 = Point::<i32> { x: 300, y: 400 };
+    let p_i8 = Point::<i8> { x: 10, y: 10 };
+
+    use std::mem::size_of_val;
+    println!("size of x in p_i32 = {}", size_of_val(&p_i32)); // 32
+    println!("size of x in p_i8 = {}", size_of_val(&p_i8));   // 8
+
+    let mut pu8 = Point::<u8>::new(10, 20);
+    println!("pu8.x = {}", pu8.getx());
+    pu8.setx(24);
+    println!("pu8.x = {}", pu8.getx());
+
+    let mut p_i64 = Point::<i64> { x: 65535, y: 65535 };
+    set_xy::<i64>(&mut p_i64, 2^33 + 1, 65535);
+    println!("p_i64.x = {}, y = {}", p_i64.getx(), p_i64.y);
 }
 ```
 
-なお、どんなコードでも書けるわけではなく、以下の5つの動作のみが許されている。
+Rustコンパイラが型推論可能であれば型パラメーターの記述はある程度省略できる。以下の記述はすべて有効であるが、素直に標準的な書き方をしたほうがよいだろう。
 
-1. ハードウェア（メモリ）の直接操作
-1. 可変なグローバル変数（static mut）へのアクセス
-1. 安全でない関数（C言語の関数など）を呼び出す
-1. unsafeなトレイトを実装する
-1. Unionへアクセスする
+```rust
+let p_i32 = Point::<i32> { x: 300, y: 400 };      // 標準的な記述方法。
+let p_i32:Point<i32> = Point { x: 300, y: 400 };  // 左辺で型パラメーターを指定しているので、右辺の指定なしでもOK。
+let p_i32 = Point { x: 300i32, y: 400i32 };       // フィールドで指定した型から型パラメーターを推論可能。
+let p_i32 = Point { x: 300, y: 400 };             // 整数リテラルはデフォルトでi32になるので省略可能。
+```
 
-メモリマップドIOを操作するために、特に1番目の操作が重要となる。
+また、ジェネリクスはコンパイル時に解決されるため、実行時には一切のオーバーヘッドがかからない。実行時のコストなしにプログラムを抽象化しているため、ゼロコスト抽象化と呼ばれている。
+
+### トレイト（trait）
+
+トレイトは異なる構造体が持つ共通の機能を定義する方法で、JavaでいうInterface、C++でいう抽象基底クラスに似た機能である。
+
+#### トレイトの基本構文
+
+基本的な構文は以下の通り。`trait トレイト名 { // 処理 }`を定義し、それを構造体に`impl トレイト名 for 構造体名 {}`で実装する。
+
+```rust
+struct LightSensor {
+    value: u32,
+}
+
+struct TemperatureSensor {
+    value: f32,
+}
+
+trait Sensor {
+    fn read(&self) -> u32;
+}
+
+impl Sensor for LightSensor {
+    fn read(&self) -> u32 {
+        self.value
+    }
+}
+
+impl Sensor for TemperatureSensor {
+    fn read(&self) -> u32 {
+        self.value as u32
+    }
+}
+
+fn main() {
+    let ls = LightSensor { value: 10 };
+    let ts = TemperatureSensor { value: 20.0 };
+
+    println!("ls.read() = {}, ts.read() = {}", ls.read(), ts.read());
+}
+```
+
+#### トレイトを関数パラメーターとして利用する
+
+トレイトを関数パラメーターとして利用することもできる。JavaのInterfaceやC++の抽象基底クラス、もしくは親クラスを渡すようなイメージである。
+
+```rust
+struct LightSensor {
+    value: u32,
+}
+
+struct TemperatureSensor {
+    value: f32,
+}
+
+trait Sensor {
+    fn read(&self) -> u32;
+}
+
+impl Sensor for LightSensor {
+    fn read(&self) -> u32 {
+        self.value
+    }
+}
+
+impl Sensor for TemperatureSensor {
+    fn read(&self) -> u32 {
+        self.value as u32
+    }
+}
+
+fn print_sensor_value(sensor: &impl Sensor) {
+    println!("sensor value = {}", sensor.read());
+}
+
+fn main() {
+    let ls = LightSensor { value: 10 };
+    let ts = TemperatureSensor { value: 20.0 };
+
+    println!("ls");
+    print_sensor_value(&ls);
+    println!("ts");
+    print_sensor_value(&ts);
+}
+```
+
+#### トレイト境界を使う
+
+以下の通り、前項で記述した関数はトレイト境界のシンタックスシュガーである。今回は1つのトレイトしか受け取らないので、シンタックスシュガーを用いた構文のほうが見やすい。
+
+```rust
+// 前項に出てきたこの関数は…
+fn print_sensor_value(sensor: &impl Sensor) {
+    println!("sensor value = {}", sensor.read());
+}
+
+// この記述方法のシンタックスシュガーである。
+// 「: Sensor」の部分をトレイト境界と呼ぶ。
+fn print_sensor_value<S: Sensor>(sensor: &S) {
+    println!("sensor value = {}", sensor.read());
+}
+```
+
+トレイト境界の記述方法は複数用意されている。複数のトレイトを複雑に指定する場合は`where`句を利用する方法を用いるほうが読みやすい。
+
+```rust
+// トレイト境界を使い、かつ引数を2つ受け取るパターン。
+fn print_sensor_value<S: Sensor>(sensor1: &S, sensor2: &S) {
+    // 処理
+}
+
+// 複数のトレイトを指定するパターンその1。implを使う方法。
+fn print_sensor_value(sensor: &impl Sensor + Debug) {
+    // 処理
+}
+
+// 複数のトレイトを指定するパターンその2。トレイト境界を使う方法。
+fn print_sensor_value<S: Sensor + Debug>(sensor: &impl S) {
+    // 処理
+}
+
+// 複数のトレイトを複雑に指定するパターン。トレイト境界とwhere句を使う方法。
+fn print_sensor_value<S, T>(sensor: &S, note: &T)
+  where S: Sensor + Debug,
+        T: Debug + Clone {
+    // 処理
+}
+```
+
+#### トレイトメソッドのデフォルト実装
+
+トレイトにはメソッドをデフォルト実装することができる。デフォルト実装したメソッドはimpl時に上書きしない限り利用することができる。以下の例ではfillメソッドをデフォルト実装している。
+
+```rust
+struct LightSensor {
+    value: u32,
+}
+
+trait Sensor {
+    fn read(&self) -> u32;
+    fn fill(&self, buffer: &mut [u32]) {
+        for element in buffer.iter_mut() {
+            *element = self.read();
+        }
+    }
+}
+
+impl Sensor for LightSensor {
+    fn read(&self) -> u32 {
+        self.value
+    }
+}
+
+fn main() {
+    let ls = LightSensor { value: 10 };
+    let mut buf = [0u32; 4];
+
+    ls.fill(&mut buf);
+    println!("buf = {:?}", buf);
+}
+```
+
+### クレート・モジュールの利用
+
+冒頭に挙げた画像の通り、Rustのプロジェクト（パッケージ）は以下の構成になっている。この章では外部クレートやモジュールを利用する手順を紹介する。
+
+![./img/rust_basic.png](./img/rust_basic.png)
+
+#### 外部クレートのインポート
+
+外部クレートをインポートするには、`Cargo.toml`にcrates.ioで公開されているクレート名とバージョンを記述し、ソースコードに`use`文を記述すればよい。`use`文は`use クレート名::トレイト/モジュール/構造体[::トレイト/モジュール/構造体}`のように記述する。`use クレート名::モジュール名::{トレイト1, 構造体1, ...}`のように、波かっこで囲むことで同じモジュールに含まれる複数の要素をインポートできる。
+
+```toml
+# Cargo.toml
+[dependencies]
+rand = "0.8.0"
+```
+
+```rust
+// main.rs
+// randはクレートでRngはトレイト。
+use rand::Rng;
+
+fn main() {
+  let mut rng = rand::thread_rng();
+  for _ in 0..5 {
+    let dice = rng.gen_range(1..=6);
+    println!("{}", dice);
+  }
+}
+```
+
+Cargo.tomlの説明資料は以下の通り。
+
+- toml.io
+  <https://github.com/toml-lang/toml.io>
+- TOML v1.0.0-rc.2（日本語版）
+  <https://github.com/toml-lang/toml.io/blob/main/specs/ja/v1.0.0-rc.2.md>
+- The Manifest Format
+  <https://doc.rust-lang.org/cargo/reference/manifest.html>
+
+#### モジュールの公開とインポート
+
+以下のフォルダ構成でモジュールを定義したと考える（`フォルダ名/mod.rs`で`フォルダ名`がモジュールとなる）。そして、`const_sample.rs`はモジュール内に定義したモジュールである。
+
+```shell
+rust_grammer_sample
+│  Cargo.toml
+│
+└─src
+    │  main.rs
+    │
+    └─module1
+            const_sample.rs
+            mod.rs
+```
+
+`const_sample.rs`は内部でサブモジュールを作り、そこでグローバル変数を定義している。サブモジュールとグローバル変数の両方にキーワード`pub`を付与しなければモジュールの外部へ公開されない。
+
+```rust
+// const_sample.rs
+pub mod sub_module1 {
+  pub static HELLO: &str = "Hello";
+}
+
+pub mod sub_module2 {
+  pub static WORLD: &str = "World";
+}
+```
+
+次は`mod.rs`である。最初の`pub mod const_sample`で`const_sample`モジュールをインポートし、外部へ公開している。また、2行目の`pub use`文では`sub_module2`だけを公開してもいる。
+
+```rust
+// mod.rs
+pub mod const_sample;
+pub use const_sample::sub_module2;
+```
+
+そして、`main.rs`でも`mod`文を実行して`module1`をインポートする。モジュール内のモジュール、グローバル変数には以下のようにアクセスできる。面白いのは4行目の`use module1::sub_module2`で、これは`module1.rs`で`sub_module2`だけを公開したことで、`module1`直下でインポートできるようにななったのでこのような記述が可能になったのだ。
+
+```rust
+// main.rs
+mod module1;
+use module1::const_sample::sub_module1;
+use module1::sub_module2;
+
+fn main() {
+    println!("{}", module1::const_sample::sub_module1::HELLO);  // mod module1; だけしか書いていなくてもこの記述は有効。
+    println!("{}", sub_module1::HELLO);
+    println!("{}", sub_module2::WORLD);
+}
+```
+
+#### 構造体やトレイトのインポート
+
+自作の構造体やトレイトも、モジュールと同じく別ファイルに定義されている場合は`mod`文と`use`文でインポートしなければならない。
+
+### （TODO）マクロ
+
+### （TODO）アトリビュート
 
 ## 参考資料
 
@@ -941,12 +1234,3 @@ unsafe {
 1. -, What is rustc?, -, -, <https://doc.rust-lang.org/nightly/rustc/what-is-rustc.html>
 1. -, The Rust Reference, -, -, <https://doc.rust-lang.org/reference/introduction.html>
 1. -, Rust 裏本, -, -, <https://doc.rust-jp.rs/rust-nomicon-ja/index.html>
-
-### 組み込みRustの資料
-
-1. tomoyuki-nakabayashi, The Embedded Rust Book, -, -, <https://tomoyuki-nakabayashi.github.io/book/intro/index.html>
-1. getditto, `safer_ffi` User Guide, -, -, <https://getditto.github.io/safer_ffi/introduction/_.html>
-1. michael-f-bryan, Rust FFI Guide, -, -, <https://michael-f-bryan.github.io/rust-ffi-guide/overview.html>
-1. Will Crichton, Memory Safety in Rust: A Case Study with C, &amp;notepad, 2018/02/02, <https://willcrichton.net/notes/rust-memory-safety/>
-1. -, Rust Design Patterns, -, -, <https://rust-unofficial.github.io/patterns/intro.html>
-1. dbrgn, Calling Rust from C and Java, -, 2017/10/31, <https://speakerdeck.com/dbrgn/calling-rust-from-c-and-java?slide=20>
