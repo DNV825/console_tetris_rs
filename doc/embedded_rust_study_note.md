@@ -1,5 +1,44 @@
 # 組み込みRustの学習ノート
 
+## 組み込み機器向けにRustを利用するための情報
+
+### 標準ライブラリの構造
+
+Rustの標準ライブラリは以下の3レベル構造で提供されている。
+
+![./img/3level_structure_std_library.png](./img/3level_structure_std_library.png)
+
+`core`クレートと`alloc`クレートは`std`クレートのサブセットである。
+
+最も下層の`core`クレートは前提条件なしで利用できる。ただし、整数型やスライスのようなプリミティブ型や、アトミック操作のようなプロセッサ機能を利用する処理しか提供されていない（OSやCPUといったプラットフォームに依存しない処理しか提供されていない）。
+
+`alloc`クレートは`Box`型や`Vec`型といったヒープメモリを利用する型を提供する。`alloc`クレートを利用するには、メモリアロケーターの実装が必要となる。
+
+`std`クレートはファイルシステムやネットワーク、スレッドといったOS機能を提供する。`println!`マクロやコマンドライン引数を渡すインターフェースも`std`クレートの役割である。`std`クレートを利用するためにはOSが必要となる。
+
+通常は考慮不要だが、OSが載っていない組み込み機器向けにアプリケーションを作成する際には、これらを考慮しなければならない。
+
+### unsafeブロック
+
+FPGAボードなどを利用する際はハードウェアを直接制御することになるが、その場合「Rustコンパイラが安全でないとみなすコード」を記述する必要がある。そのために利用するのがunsafeブロックで、以下のように記述する。もちろん、記述内容の安全性は記述者であるプログラマーが保証しなければならない。
+
+```rust
+unsafe {
+  // 安全でない操作を記述できる。
+  // 操作の安全性はプログラマーが保障する。
+}
+```
+
+なお、どんなコードでも書けるわけではなく、以下の5つの動作のみが許されている。
+
+1. ハードウェア（メモリ）の直接操作
+1. 可変なグローバル変数（static mut）へのアクセス
+1. 安全でない関数（C言語の関数など）を呼び出す
+1. unsafeなトレイトを実装する
+1. Unionへアクセスする
+
+メモリマップドIOを操作するために、特に1番目の操作が重要となる。
+
 ## 必要なもの
 
 - cbindgen
@@ -330,3 +369,12 @@ wsluser@PC-C0204-2207-1:/mnt/c/workspace/embedded_rust$ ldd c_bin_sample/call_ru
 
 1. -, Cと少しのRust, The Embedded Rust Book（日本語版）, -, <https://tomoyuki-nakabayashi.github.io/book/interoperability/rust-with-c.html>
 1. eqrion and 100 Contributors, cbindgen, GitHub, 2022/11/14, <https://github.com/eqrion/cbindgen>
+
+### 組み込みRustの資料
+
+1. tomoyuki-nakabayashi, The Embedded Rust Book, -, -, <https://tomoyuki-nakabayashi.github.io/book/intro/index.html>
+1. getditto, `safer_ffi` User Guide, -, -, <https://getditto.github.io/safer_ffi/introduction/_.html>
+1. michael-f-bryan, Rust FFI Guide, -, -, <https://michael-f-bryan.github.io/rust-ffi-guide/overview.html>
+1. Will Crichton, Memory Safety in Rust: A Case Study with C, &amp;notepad, 2018/02/02, <https://willcrichton.net/notes/rust-memory-safety/>
+1. -, Rust Design Patterns, -, -, <https://rust-unofficial.github.io/patterns/intro.html>
+1. dbrgn, Calling Rust from C and Java, -, 2017/10/31, <https://speakerdeck.com/dbrgn/calling-rust-from-c-and-java?slide=20>
