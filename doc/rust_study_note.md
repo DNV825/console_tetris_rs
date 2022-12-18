@@ -684,6 +684,27 @@ fn main() {
 }
 ```
 
+##### 構造体の定数
+
+`impl`で構造体の定数も定義できる。
+
+```rust
+pub struct AlternateScreenBuffer { }
+
+impl AlternateScreenBuffer {
+
+  const USE_ALTERNATE_SCREEN_BUFFER: &str = "\x1b[?1049h";
+  pub fn use_alternate_screen_buffer() {
+    println!("{}", Self::USE_ALTERNATE_SCREEN_BUFFER);
+  }
+
+  const USE_MAIN_SCREEN_BUFFER: &str = "\x1b[?1049l";
+  pub fn use_main_screen_buffer() {
+    println!("{}", Self::USE_MAIN_SCREEN_BUFFER);
+  }
+}
+```
+
 ### （TODO）列挙型
 
 Rustの列挙型は代数的データ型と呼ばれる方の一種で、C言語のような整数しか扱えない言語に比べるとはるかに強力な機能を持つ。
@@ -1282,6 +1303,21 @@ fn main() {
 ### （TODO）マクロ
 
 ### （TODO）アトリビュート
+
+## （TODO）後で整理
+
+<https://qiita.com/horyu/items/12f6cd13ceb217782df3>
+<https://github.com/microsoft/windows-rs>
+<https://learn.microsoft.com/ja-jp/windows/win32/learnwin32/keyboard-input>
+<https://abrakatabura.hatenablog.com/entry/2017/09/20/065024>
+
+<https://crates.io/crates/termion> ... not support windows.
+<https://docs.rs/termion/2.0.1/termion/>
+<https://qiita.com/hatoo@github/items/905a19a98876e7446edf>
+
+<https://zenn.dev/gawetto/articles/85475e57392b7b>
+<https://crates.io/crates/crossterm>
+<https://docs.rs/crossterm/0.25.0/crossterm/event/index.html>
 
 ## 参考資料
 
