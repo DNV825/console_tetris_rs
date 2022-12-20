@@ -738,6 +738,36 @@ fn main() {
 }
 ```
 
+列挙型の判定は`match`式、もしくは`if let`式で行う。`if let`はパッと見わかりにくいが「右辺を左辺に束縛できた場合にブロックの中へ入る」イメージ。`match`式を利用する場合、とりうる値をすべて記述しなければならない。
+
+```rust
+enum KeyState {
+    Pressed,
+    Unpressed,
+}
+
+fn main() {
+  let key_state_down_arrow = KeyState::Pressed;
+
+  match key_state_down_arrow {
+    KeyState::Pressed => if player1_pos_y == 30 {
+          player1_pos_y = 30;
+        } else {
+          player1_pos_y += 1;
+        }
+    _ => (), // その他の場合。
+  }
+
+  if let KeyState::Pressed = key_state_down_arrow {
+      if player1_pos_y == 30 {
+          player1_pos_y = 30;
+      } else {
+          player1_pos_y += 1;
+      }
+  }
+}
+```
+
 #### impl
 
 ```rust
