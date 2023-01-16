@@ -596,7 +596,7 @@ fn main() {
 }
 ```
 
-#### impl
+#### impl（構造体）
 
 `impl`文で構造体へメソッドと関連関数を定義する。`impl`はimplementation（実装）を意味する。
 
@@ -768,7 +768,7 @@ fn main() {
 }
 ```
 
-#### impl
+#### impl（列挙体）
 
 ```rust
 impl 列挙体名 {
@@ -1330,9 +1330,36 @@ fn main() {
 
 自作の構造体やトレイトも、モジュールと同じく別ファイルに定義されている場合は`mod`文と`use`文でインポートしなければならない。
 
+### （TODO）クロージャ
+
+<https://opaupafz2.hatenablog.com/entry/2022/04/17/003231>
+
 ### （TODO）マクロ
 
 ### （TODO）アトリビュート
+
+### （TODO）HashMap
+
+```rust
+use std::collections::HashMap;
+
+fn main() {
+  let map = vec![
+    (0, "Zero"),
+    (1, "One"),
+    (2, "Two"),
+  ].into_iter().collect::<HashMap<_, _>>();
+
+  if let Some(v) = map.get(&1) {
+    println!("{}", v);
+  }
+}
+```
+
+<https://qiita.com/qnighy/items/b1d63b1931447758d607>
+<https://doc.rust-lang.org/std/collections/struct.HashMap.html>
+<https://doc.rust-jp.rs/rust-by-example-ja/std/hash.html>
+<https://zenn.dev/oyasumi731/articles/773415950cb014>
 
 ## （TODO）後で整理
 
