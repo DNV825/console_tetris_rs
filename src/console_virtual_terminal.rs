@@ -30,19 +30,19 @@ use std::collections::HashMap;
 /// コード「ESC M」
 /// \nの反転操作を実行し、カーソルを 1 行上に移動し、
 /// 水平位置を維持し、必要に応じてバッファーをスクロールする。
-pub fn reverse_index() {
+pub fn _reverse_index() {
     print!("\x1bM");
 }
 
 /// コード「ESC 7」
 /// カーソル位置をメモリに保存する。
-pub fn save_cursor_position_in_memory() {
+pub fn _save_cursor_position_in_memory() {
     print!("\x1b7");
 }
 
 /// コード「ESC 8」
 /// メモリからカーソル位置を復元する。
-pub fn restore_cursor_position_in_memory() {
+pub fn _restore_cursor_position_in_memory() {
     print!("\x1b8");
 }
 
@@ -51,16 +51,27 @@ pub fn restore_cursor_position_in_memory() {
 pub fn set_cursor_position(x: u32, y: u32) {
     print!("\x1b[{};{}H", y, x);
 }
+/// コード「ESC[?25l」
+/// カーソルを非表示にする。
+pub fn set_cursor_invisible() {
+    print!("\x1b[?25l");
+}
+
+/// コード「ESC[?25h」
+/// カーソルを表示する。
+pub fn set_cursor_visible() {
+    print!("\x1b[?25h");
+}
 
 /// コード「ESC(0」
 /// DEC の線描画モードを有効にします。
-fn enables_dec_line_drawing_mode() {
+pub fn _enables_dec_line_drawing_mode() {
     print!("\x1b(0");
 }
 
 /// コード「ESC(B」
 /// ASCIIモードを有効にします（規定）。
-fn enables_ascii_mode() {
+pub fn _enables_ascii_mode() {
     print!("\x1b(B");
 }
 
@@ -79,7 +90,7 @@ fn enables_ascii_mode() {
 /// | 0x76 | v     | ┴               |
 /// | 0x77 | w     | ┬               |
 /// | 0x78 | x     | │               |
-pub fn draw_dec_line(str: &str) {
+pub fn _draw_dec_line(str: &str) {
     let dec_line_drawing_ascii = vec![
         ("┘", "j"),
         ("┐", "k"),
@@ -97,7 +108,7 @@ pub fn draw_dec_line(str: &str) {
     .collect::<HashMap<&_, &_>>();
 
     // DEC線描画モードを有効にする。
-    enables_dec_line_drawing_mode();
+    _enables_dec_line_drawing_mode();
 
     for c in str.chars() {
         let s: &str = &c.to_string();
@@ -109,7 +120,7 @@ pub fn draw_dec_line(str: &str) {
     }
 
     // ASCIIモードを有効にする。
-    enables_ascii_mode();
+    _enables_ascii_mode();
 }
 
 /// コード「ESC]0;<string><ST>」（<ST> = \x1b\x5c）
@@ -132,6 +143,6 @@ pub fn use_main_screen_buffer() {
 
 /// コード「ESC[2J」
 /// 画面をクリアします。
-pub fn clear_screen() {
+pub fn _clear_screen() {
     print!("\x1b[2J");
 }
